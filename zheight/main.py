@@ -34,6 +34,10 @@ def parse_arguments():
                              "image is all black).",
                         default=15,
                         type=int)
+    parser.add_argument("--output-array", 
+                        help="Path to the output numpy array of the contour map.",
+                        default=None,
+                        type=str)
     return parser.parse_args()
 
 
@@ -44,6 +48,8 @@ def zmask(stack, z, sigma, tmult, min_threshold):
     thresh = max(threshold_otsu(stack) * tmult, min_threshold)
     return simg > thresh
 
+def calculate_rms(carray):
+    return np.sqrt(np.sum(np.square(carray - np.mean(carray)))/np.prod(carray.shape))
 
 def main():
     args = parse_arguments()
@@ -55,6 +61,10 @@ def main():
     for z in range(stack.shape[0]):
         zm = zmask(stack, z, args.sigma, args.multiplier, args.min_threshold)
         first_z[(first_z == 0) & zm] = z + 1
+    if args.output_array is not None:
+        np.save(args.output_array, first_z)
+    rms = calculate_rms(first_z)
+    print('RMS:', rms) 
     figure = pyplot.figure(figsize=(10, 8))
     ax = figure.gca()
     ax.set_ylim(stack.shape[1], 0)
